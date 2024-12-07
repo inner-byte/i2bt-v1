@@ -3,19 +3,108 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #EDF4F7;
+  --foreground: #1A1A1A;
+  --primary: #2B2B2B;
+  --secondary: #4A4A4A;
+  --accent: #007AFF;
+  --nav-bg: #E5EEF3;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+/* Navbar styles */
+nav {
+  @apply rounded-full mx-4 my-4;
+}
+
+nav a {
+  @apply font-medium;
+}
+
+nav a:not(:nth-child(3)) {
+  @apply text-sm;
+}
+
+@layer components {
+  .glass-effect {
+    @apply backdrop-blur-[16px] bg-white/10 border border-white/20;
+  }
+
+  .neo-effect {
+    @apply bg-gradient-to-br from-white/10 to-white/5 shadow-lg;
+  }
+
+  .frosted-glass {
+    @apply backdrop-blur-[10px] bg-white/10 border border-white/20;
+  }
+
+  .animated-bg {
+    @apply relative overflow-hidden;
+  }
+
+  .animated-bg::before {
+    @apply content-[''] absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    animation: shimmer 2s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.section-padding {
+  @apply py-16 md:py-24;
+}
+
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-black/20;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/20 rounded-full hover:bg-white/30 transition-colors;
+}
+
+/* Card hover effects */
+.hover-card {
+  @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl;
+}
+
+/* Button hover effects */
+.button-hover {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95;
+}
+
+/* Text gradient */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }

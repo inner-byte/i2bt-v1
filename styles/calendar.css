@@ -1,0 +1,227 @@
+/* Calendar Container */
+.rbc-calendar {
+  width: 100%;
+  height: 100% !important;
+  font-family: inherit;
+  background: white;
+  border-radius: 1rem;
+}
+
+/* Header Styles */
+.rbc-header {
+  padding: 16px 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #4B5563;
+  background-color: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid #E5E7EB;
+}
+
+/* Month View */
+.rbc-month-view {
+  border: 1px solid #E5E7EB;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.rbc-month-row {
+  min-height: 100px;
+}
+
+.rbc-date-cell {
+  padding: 8px;
+  text-align: center;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.rbc-date-cell.rbc-now {
+  color: #3B82F6;
+  font-weight: 600;
+}
+
+.rbc-off-range-bg {
+  background-color: #F9FAFB;
+}
+
+.rbc-today {
+  background-color: #EDF4F7;
+}
+
+/* Event Styles */
+.rbc-event {
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.rbc-event-content {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.rbc-event.rbc-selected {
+  background-color: inherit;
+  box-shadow: 0 0 0 2px #3B82F6;
+}
+
+/* Toolbar Styles */
+.rbc-toolbar {
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.rbc-toolbar button {
+  color: #4B5563;
+  border: 1px solid #E5E7EB;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #F9FAFB;
+  color: #1F2937;
+  border-color: #D1D5DB;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #EDF4F7;
+  color: #1F2937;
+  border-color: #D1D5DB;
+  box-shadow: none;
+}
+
+/* Time Grid */
+.rbc-time-view {
+  border: 1px solid #E5E7EB;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.rbc-time-header {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.rbc-time-content {
+  border-top: 1px solid #E5E7EB;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.rbc-time-slot {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+/* Agenda View */
+.rbc-agenda-view {
+  border: 1px solid #E5E7EB;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.rbc-agenda-empty {
+  padding: 24px;
+  text-align: center;
+  color: #6B7280;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell {
+  font-size: 0.875rem;
+  color: #4B5563;
+  padding: 12px 16px;
+}
+
+.rbc-agenda-event-cell {
+  padding: 12px 16px;
+}
+
+/* Show More Popup */
+.rbc-overlay {
+  background-color: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 8px;
+}
+
+.rbc-overlay-header {
+  padding: 8px;
+  font-weight: 600;
+  color: #4B5563;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+/* Custom Scrollbar */
+.rbc-time-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: #F3F4F6;
+  border-radius: 3px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .rbc-toolbar-label {
+    margin: 8px 0;
+    text-align: center;
+  }
+
+  .rbc-btn-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 4px;
+  }
+
+  .rbc-header {
+    padding: 8px 4px;
+    font-size: 0.75rem;
+  }
+
+  .rbc-event-content {
+    font-size: 0.75rem;
+  }
+}
+
+/* Animation for Events */
+.rbc-event {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rbc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Better Visibility for Today */
+.rbc-today {
+  background-color: #EDF4F7 !important;
+  font-weight: 600;
+}
