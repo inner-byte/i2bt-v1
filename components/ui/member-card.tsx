@@ -1,41 +1,214 @@
+'use client';
+
 import { FC } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   UserIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  MapPinIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/auth-context';
 
 interface MemberCardProps {
-  name: string;
-  role: string;
-  bio: string;
-  image?: string;
-  skills: string[];
-  socialLinks: {
-    twitter?: string;
-    linkedin?: string;
+  member: {
+    id: string;
+    name: string;
+    role?: string;
+    image?: string;
+    email?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
     github?: string;
+    linkedin?: string;
+    skills?: string[];
+    graduationYear?: number;
+    major?: string;
   };
+  variant?: 'default' | 'compact' | 'glass';
+  isCurrentUser?: boolean;
+  isLoading?: boolean;
 }
 
 export const MemberCard: FC<MemberCardProps> = ({
-  name,
-  role,
-  bio,
-  image,
-  skills,
-  socialLinks
+  member,
+  variant = 'default',
+  isCurrentUser = false,
+  isLoading = false,
 }) => {
+  const { user } = useAuth();
+  const {
+    id,
+    name,
+    role,
+    image,
+    bio,
+    location,
+    website,
+    github,
+    linkedin,
+    skills,
+    graduationYear,
+    major,
+  } = member;
+
+  if (isLoading) {
+    return (
+      <motion.div
+        className={`animate-pulse ${
+          variant === 'glass'
+            ? 'glass-effect p-6 rounded-2xl'
+            : variant === 'compact'
+            ? 'bg-card rounded-lg shadow-sm p-4'
+            : 'bg-card rounded-xl shadow-lg overflow-hidden'
+        }`}
+      >
+        <div className="flex items-center space-x-4">
+          <div className="rounded-full bg-gray-200 h-16 w-16" />
+          <div className="flex-1 space-y-3">
+            <div className="h-4 bg-gray-200 rounded w-3/4" />
+            <div className="h-3 bg-gray-200 rounded w-1/2" />
+          </div>
+        </div>
+        <div className="space-y-3 mt-4">
+          <div className="h-3 bg-gray-200 rounded" />
+          <div className="h-3 bg-gray-200 rounded w-5/6" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (variant === 'glass') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-effect p-6 rounded-2xl hover-card"
+      >
+        <div className="flex items-start space-x-4">
+          <div className="relative h-16 w-16 flex-shrink-0">
+            <Image
+              src={image || '/images/default-avatar.png'}
+              alt={name || 'Member'}
+              fill
+              className="rounded-full object-cover"
+            />
+            {isCurrentUser && (
+              <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <Link
+              href={`/members/${id}`}
+              className="text-lg font-semibold hover:text-accent transition-colors"
+            >
+              {name}
+              {isCurrentUser && (
+                <span className="ml-2 text-xs text-green-500">(You)</span>
+              )}
+            </Link>
+            {location && (
+              <p className="mt-1 text-sm text-muted-foreground flex items-center">
+                <MapPinIcon className="h-4 w-4 mr-1" />
+                {location}
+              </p>
+            )}
+            {website && (
+              <p className="mt-1 text-sm text-muted-foreground flex items-center">
+                <GlobeAltIcon className="h-4 w-4 mr-1" />
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-accent transition-colors"
+                >
+                  {new URL(website).hostname}
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {bio && (
+          <p className="mt-4 text-sm text-muted-foreground line-clamp-2">
+            {bio}
+          </p>
+        )}
+
+        {skills && skills.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <Badge key={skill} variant="secondary">
+                {skill}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {user && !isCurrentUser && (
+          <div className="mt-4 flex justify-end">
+            <Button variant="outline" size="sm">
+              Connect
+            </Button>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
+  if (variant === 'compact') {
+    return (
+      <motion.div
+        className="bg-card rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
+        whileHover={{ y: -2 }}
+      >
+        <div className="flex items-center space-x-3">
+          <div className="relative h-10 w-10">
+            {image ? (
+              <Image
+                src={image}
+                alt={name}
+                fill
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-muted flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <div>
+            <Link
+              href={`/members/${id}`}
+              className="font-medium hover:underline"
+            >
+              {name}
+              {isCurrentUser && (
+                <span className="ml-2 text-xs text-green-500">(You)</span>
+              )}
+            </Link>
+            {role && (
+              <p className="text-sm text-muted-foreground">{role}</p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
-      className="bg-white rounded-2xl shadow-lg overflow-hidden w-[320px]"
+      className="bg-card rounded-xl shadow-lg overflow-hidden"
       whileHover={{ y: -5 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary">
         <div className="absolute -bottom-16 inset-x-0 flex justify-center">
-          <div className="relative w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-gray-100">
+          <div className="relative w-32 h-32 rounded-full border-4 border-background overflow-hidden bg-muted">
             {image ? (
               <Image
                 src={image}
@@ -44,8 +217,8 @@ export const MemberCard: FC<MemberCardProps> = ({
                 className="object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <UserIcon className="w-16 h-16 text-gray-400" />
+              <div className="w-full h-full flex items-center justify-center">
+                <UserIcon className="w-16 h-16 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -54,68 +227,113 @@ export const MemberCard: FC<MemberCardProps> = ({
 
       <div className="px-6 pt-20 pb-6">
         <div className="text-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-800">{name}</h3>
-          <p className="text-gray-600 text-sm">{role}</p>
-        </div>
-
-        <p className="text-gray-600 text-sm text-center mb-4 line-clamp-2">
-          {bio}
-        </p>
-
-        {/* Skills */}
-        <div className="flex flex-wrap gap-1 justify-center mb-4">
-          {skills.slice(0, 4).map((skill, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600"
-            >
-              {skill}
-            </span>
-          ))}
-          {skills.length > 4 && (
-            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
-              +{skills.length - 4}
-            </span>
+          <Link
+            href={`/members/${id}`}
+            className="text-xl font-semibold hover:underline"
+          >
+            {name}
+            {isCurrentUser && (
+              <span className="ml-2 text-xs text-green-500">(You)</span>
+            )}
+          </Link>
+          {role && (
+            <p className="text-muted-foreground">{role}</p>
           )}
         </div>
 
-        {/* Social Links */}
-        <div className="flex justify-center gap-3">
-          {socialLinks.twitter && (
-            <a
-              href={socialLinks.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-blue-400 transition-colors"
+        {bio && (
+          <p className="text-muted-foreground text-center mb-4 line-clamp-2">
+            {bio}
+          </p>
+        )}
+
+        {(major || graduationYear) && (
+          <div className="text-center mb-4">
+            {major && (
+              <p className="text-sm text-muted-foreground">{major}</p>
+            )}
+            {graduationYear && (
+              <p className="text-sm text-muted-foreground">Class of {graduationYear}</p>
+            )}
+          </div>
+        )}
+
+        {skills && skills.length > 0 && (
+          <div className="flex flex-wrap gap-1 justify-center mb-4">
+            {skills.slice(0, 4).map((skill) => (
+              <Badge key={skill} variant="secondary">
+                {skill}
+              </Badge>
+            ))}
+            {skills.length > 4 && (
+              <Badge variant="secondary">+{skills.length - 4}</Badge>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-2">
+          {github && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-              </svg>
-            </a>
+              <a
+                href={`https://github.com/${github}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>GitHub</span>
+              </a>
+            </Button>
           )}
-          {socialLinks.linkedin && (
-            <a
-              href={socialLinks.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-blue-600 transition-colors"
+
+          {linkedin && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-              </svg>
-            </a>
+              <a
+                href={`https://linkedin.com/in/${linkedin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>LinkedIn</span>
+              </a>
+            </Button>
           )}
-          {socialLinks.github && (
-            <a
-              href={socialLinks.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-gray-900 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-              </svg>
-            </a>
+
+          {isCurrentUser && (
+            <Button variant="default" size="sm" asChild>
+              <Link href="/profile/edit">Edit Profile</Link>
+            </Button>
           )}
         </div>
       </div>

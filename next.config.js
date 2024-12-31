@@ -5,6 +5,10 @@ const nextConfig = {
   images: {
     domains: [],
   },
+  transpilePackages: ['framer-motion'],
+  webpack: (config) => {
+    return config
+  }
 }
 
 module.exports = nextConfig

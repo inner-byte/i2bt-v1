@@ -297,7 +297,7 @@ export const ResourceHub: FC = () => {
                   {/* Header with Icon */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-grow">
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2 line-clamp-2">{resource.title}</h3>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{resource.title}</h3>
                       <p className="text-gray-600 text-sm line-clamp-2">{resource.description}</p>
                     </div>
                     <CategoryIcon className="w-6 h-6 text-blue-500 flex-shrink-0 ml-4" />

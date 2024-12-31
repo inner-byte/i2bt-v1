@@ -5,14 +5,18 @@ import { MemberCard } from './member-card';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useDebounce } from '@/hooks/use-debounce';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 
 export function MemberList() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [skill, setSkill] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const { user } = useAuth();
   
   const debouncedSearch = useDebounce(search, 300);
   const debouncedSkill = useDebounce(skill, 300);
@@ -20,6 +24,7 @@ export function MemberList() {
   useEffect(() => {
     const fetchMembers = async () => {
       setLoading(true);
+      setError(null);
       try {
         const params = new URLSearchParams({
           page: page.toString(),
@@ -45,6 +50,7 @@ export function MemberList() {
         setTotalPages(data.pages);
       } catch (error) {
         console.error('Error fetching members:', error);
+        setError(error instanceof Error ? error.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -65,6 +71,7 @@ export function MemberList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
+              disabled={loading}
             />
           </div>
         </div>
@@ -75,6 +82,7 @@ export function MemberList() {
             value={skill}
             onChange={(e) => setSkill(e.target.value)}
             className="block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
+            disabled={loading}
           />
         </div>
       </div>
@@ -86,9 +94,31 @@ export function MemberList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex justify-center py-12"
+            className="grid gap-6 md:grid-cols-2"
           >
-            <div className="h-8 w-8 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
+            {[...Array(4)].map((_, i) => (
+              <MemberCard
+                key={i}
+                member={{ id: `skeleton-${i}`, name: '' }}
+                isLoading={true}
+              />
+            ))}
+          </motion.div>
+        ) : error ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center py-12"
+          >
+            <div className="text-red-500 mb-2">{error}</div>
+            <Button
+              variant="outline"
+              onClick={() => setPage(1)}
+            >
+              Try Again
+            </Button>
           </motion.div>
         ) : members.length > 0 ? (
           <motion.div
@@ -99,7 +129,11 @@ export function MemberList() {
             className="grid gap-6 md:grid-cols-2"
           >
             {members.map((member) => (
-              <MemberCard key={member.id} member={member} />
+              <MemberCard
+                key={member.id}
+                member={member}
+                isCurrentUser={user?.id === member.id}
+              />
             ))}
           </motion.div>
         ) : (
@@ -108,32 +142,48 @@ export function MemberList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-center py-12 text-secondary"
+            className="text-center py-12"
           >
-            No members found
+            <p className="text-secondary mb-4">
+              {debouncedSearch || debouncedSkill
+                ? 'No members found matching your search criteria'
+                : 'No members found'}
+            </p>
+            {(debouncedSearch || debouncedSkill) && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setSkill('');
+                  setPage(1);
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       {totalPages > 1 && (
         <div className="flex justify-center space-x-2 pt-6">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border border-secondary/20 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed button-hover"
+            disabled={page === 1 || loading}
           >
             Previous
-          </button>
+          </Button>
           <span className="px-4 py-2">
             Page {page} of {totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 border border-secondary/20 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed button-hover"
+            disabled={page === totalPages || loading}
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
     </div>

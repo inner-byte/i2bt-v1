@@ -1,7 +1,11 @@
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import {
+  getAuth,
+  Auth,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+} from 'firebase/auth';
+import { getStorage, Storage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,10 +16,85 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+let app: FirebaseApp;
+let auth: Auth;
+let storage: Storage;
 
-export { app, auth, db, storage };
+try {
+  // Initialize Firebase only if it hasn't been initialized
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApps()[0];
+  }
+
+  // Initialize Auth
+  auth = getAuth(app);
+  
+  // Initialize Storage
+  storage = getStorage(app);
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  throw new Error('Failed to initialize Firebase');
+}
+
+// Auth providers
+export const googleProvider = new GoogleAuthProvider();
+export const githubProvider = new GithubAuthProvider();
+
+// Helper function to handle Firebase errors
+export function handleFirebaseError(error: unknown): string {
+  if (error instanceof Error) {
+    // Firebase auth error codes
+    switch (error.message) {
+      case 'auth/invalid-email':
+        return 'Invalid email address';
+      case 'auth/user-disabled':
+        return 'This account has been disabled';
+      case 'auth/user-not-found':
+        return 'No account found with this email';
+      case 'auth/wrong-password':
+        return 'Invalid password';
+      case 'auth/email-already-in-use':
+        return 'An account already exists with this email';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters';
+      case 'auth/operation-not-allowed':
+        return 'Operation not allowed';
+      case 'auth/popup-closed-by-user':
+        return 'Sign in popup was closed before completing';
+      default:
+        return error.message;
+    }
+  }
+  return 'An unexpected error occurred';
+}
+
+// Storage helper functions
+export async function uploadFile(
+  file: File,
+  path: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  try {
+    const storageRef = ref(storage, path);
+    
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    if (onProgress) {
+      uploadTask.on('state_changed', (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress(progress);
+      });
+    }
+
+    await uploadTask;
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw new Error('Failed to upload file');
+  }
+}
+
+export { auth, storage };

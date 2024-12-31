@@ -12,7 +12,7 @@ export const TypingAnimation = ({ words, className = '' }: TypingAnimationProps)
   const [currentWord, setCurrentWord] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [text, setText] = useState('');
-  const [delta, setDelta] = useState(200 - Math.random() * 100);
+  const [delta, setDelta] = useState(150);
 
   useEffect(() => {
     let ticker = setInterval(() => {

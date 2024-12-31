@@ -1,189 +1,216 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/auth-context';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Icons } from '@/components/ui/icons';
+import Link from 'next/link';
+
+const requestResetSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+const resetPasswordSchema = z.object({
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type RequestResetValues = z.infer<typeof requestResetSchema>;
+type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 interface PasswordResetFormProps {
   mode: 'request' | 'reset';
+  token?: string;
 }
 
-export function PasswordResetForm({ mode }: PasswordResetFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+export function PasswordResetForm({ mode, token }: PasswordResetFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { resetPassword, updatePassword } = useAuth();
+
+  const requestForm = useForm<RequestResetValues>({
+    resolver: zodResolver(requestResetSchema),
+    defaultValues: {
+      email: '',
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const resetForm = useForm<ResetPasswordValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      newPassword: '',
+      confirmPassword: '',
+    },
+  });
 
+  async function handleRequestReset(data: RequestResetValues) {
+    setIsLoading(true);
     try {
-      if (mode === 'request') {
-        const response = await fetch('/api/auth/reset-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: formData.email }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to send reset email');
-        }
-
-        toast.success('Password reset email sent! Please check your inbox.');
-      } else {
-        if (formData.newPassword !== formData.confirmPassword) {
-          toast.error('Passwords do not match!');
-          return;
-        }
-
-        const response = await fetch('/api/auth/reset-password', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            currentPassword: formData.currentPassword,
-            newPassword: formData.newPassword,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to update password');
-        }
-
-        toast.success('Password updated successfully!');
-        setFormData({
-          email: '',
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
-      }
+      await resetPassword(data.email);
+      toast.success('Password reset email sent! Please check your inbox.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Something went wrong!');
+      toast.error(error instanceof Error ? error.message : 'Failed to send reset email');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
+  }
+
+  async function handleResetPassword(data: ResetPasswordValues) {
+    if (!token) {
+      toast.error('Invalid reset token');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updatePassword(token, data.newPassword);
+      toast.success('Password updated successfully!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (mode === 'reset' && !token) {
+    return (
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">Invalid or expired reset token.</p>
+        <Button asChild className="mt-4">
+          <Link href="/login">Return to login</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md mx-auto"
+      className="space-y-6"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {mode === 'request' ? (
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
-              placeholder="you@example.com"
+      <div className="space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {mode === 'request' ? 'Reset your password' : 'Create new password'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {mode === 'request'
+            ? 'Enter your email address and we will send you a link to reset your password: '
+            : 'Enter your new password below'}
+        </p>
+      </div>
+
+      {mode === 'request' ? (
+        <Form {...requestForm}>
+          <form onSubmit={requestForm.handleSubmit(handleRequestReset)} className="space-y-4">
+            <FormField
+              control={requestForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-        ) : (
-          <>
-            <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium">
-                Current Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="currentPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.currentPassword}
-                  onChange={(e) =>
-                    setFormData({ ...formData, currentPassword: e.target.value })
-                  }
-                  className="block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-secondary" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5 text-secondary" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium">
-                New Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="newPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.newPassword}
-                  onChange={(e) =>
-                    setFormData({ ...formData, newPassword: e.target.value })
-                  }
-                  className="block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading && (
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Send reset link
+            </Button>
+          </form>
+        </Form>
+      ) : (
+        <Form {...resetForm}>
+          <form onSubmit={resetForm.handleSubmit(handleResetPassword)} className="space-y-4">
+            <FormField
+              control={resetForm.control}
+              name="newPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Enter new password"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium">
-                Confirm New Password
-              </label>
-              <div className="relative mt-1">
-                <input
-                  id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    setFormData({ ...formData, confirmPassword: e.target.value })
-                  }
-                  className="block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:ring-accent focus:border-accent"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-          </>
-        )}
+            <FormField
+              control={resetForm.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Confirm new password"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed button-hover"
-        >
-          {loading ? (
-            <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          ) : mode === 'request' ? (
-            'Send Reset Link'
-          ) : (
-            'Update Password'
-          )}
-        </button>
-      </form>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading && (
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Update password
+            </Button>
+          </form>
+        </Form>
+      )}
+
+      <p className="text-center text-sm text-muted-foreground">
+        Remember your password?{' '}
+        <Link href="/login" className="text-accent hover:underline">
+          Sign in
+        </Link>
+      </p>
     </motion.div>
   );
 }

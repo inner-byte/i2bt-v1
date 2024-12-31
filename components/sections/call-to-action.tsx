@@ -27,7 +27,7 @@ const socialLinks = [
   { icon: HashtagIcon, href: '#', label: 'Discord', color: 'hover:bg-purple-600 hover:text-white' }
 ];
 
-export const CallToAction = () => {
+export const CallToAction: React.FC = () => {
   return (
     <section className="relative py-24 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Background Pattern */}

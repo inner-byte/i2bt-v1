@@ -23,6 +23,8 @@ import {
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'react-hot-toast';
+import { ErrorFallback } from '@/components/ui/error-boundary';
+import { nanoid } from 'nanoid';
 
 interface Tag {
   id: string;
@@ -81,96 +83,55 @@ interface ForumPost {
   comments?: Comment[];
 }
 
-const samplePosts: ForumPost[] = [
-  {
-    id: 1,
-    title: "Building Scalable Applications with Next.js and TypeScript",
-    author: {
-      name: "Alex Chen",
-      avatar: "/avatars/alex.jpg"
-    },
-    category: "Web Development",
-    categoryColor: "blue",
-    timestamp: "2 hours ago",
-    views: 342,
-    replies: 28,
-    likes: 156,
-    isHot: true,
-    isTrending: true,
-    preview: "Let's discuss best practices for building large-scale applications using Next.js 14 and TypeScript...",
-    isLiked: false
-  },
-  {
-    id: 2,
-    title: "AI Ethics in Modern Software Development",
-    author: {
-      name: "Sarah Miller",
-      avatar: "/avatars/sarah.jpg"
-    },
-    category: "AI & ML",
-    categoryColor: "purple",
-    timestamp: "5 hours ago",
-    views: 230,
-    replies: 45,
-    likes: 98,
-    isHot: true,
-    isTrending: false,
-    preview: "Important considerations when implementing AI features in your applications...",
-    isLiked: true
-  },
-  {
-    id: 3,
-    title: "Getting Started with Cloud Native Development",
-    author: {
-      name: "James Wilson",
-      avatar: "/avatars/james.jpg"
-    },
-    category: "Cloud Computing",
-    categoryColor: "green",
-    timestamp: "1 day ago",
-    views: 567,
-    replies: 32,
-    likes: 124,
-    isHot: false,
-    isTrending: true,
-    preview: "A comprehensive guide to building and deploying cloud-native applications...",
-    isLiked: false
-  },
-  {
-    id: 4,
-    title: "Mobile App UI/UX Design Trends 2024",
-    author: {
-      name: "Emily Zhang",
-      avatar: "/avatars/emily.jpg"
-    },
-    category: "Design",
-    categoryColor: "pink",
-    timestamp: "2 days ago",
-    views: 423,
-    replies: 56,
-    likes: 245,
-    isHot: false,
-    isTrending: true,
-    preview: "Exploring the latest trends in mobile app design and user experience...",
-    isLiked: false
-  }
-];
-
-const getCategoryColor = (category: string) => {
-  const colors = {
-    blue: "bg-blue-100 text-blue-700",
-    purple: "bg-purple-100 text-purple-700",
-    green: "bg-green-100 text-green-700",
-    pink: "bg-pink-100 text-pink-700"
-  };
-  return colors[category as keyof typeof colors] || colors.blue;
-};
-
 export const ForumDiscussions: FC = () => {
+  const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch('/api/forum/posts');
+        if (!response.ok) {
+          throw new Error('Failed to fetch forum posts');
+        }
+        const data = await response.json();
+        setPosts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('An error occurred'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (error) {
+    return <ErrorFallback error={error} resetErrorBoundary={() => window.location.reload()} />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-24">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      blue: "bg-blue-100 text-blue-700",
+      purple: "bg-purple-100 text-purple-700",
+      green: "bg-green-100 text-green-700",
+      pink: "bg-pink-100 text-pink-700"
+    };
+    return colors[category as keyof typeof colors] || colors.blue;
+  };
+
   const [showLoginPrompt, setShowLoginPrompt] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState<{ [key: number]: string }>({});
   const [editContent, setEditContent] = useState<{ [key: number]: string }>({});
-  const [posts, setPosts] = useState<ForumPost[]>(samplePosts);
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ postId: number; commentId: number } | null>(null);
   const [mentionQuery, setMentionQuery] = useState('');
@@ -196,6 +157,14 @@ export const ForumDiscussions: FC = () => {
 
   const handleDeleteComment = async (postId: number, commentId: number) => {
     try {
+      const response = await fetch(`/api/forum/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
+
       setPosts(prevPosts =>
         prevPosts.map(post =>
           post.id === postId
@@ -214,12 +183,6 @@ export const ForumDiscussions: FC = () => {
     }
   };
 
-  const handleReplyAttempt = (postId: number) => {
-    if (!user) {
-      setShowLoginPrompt(postId);
-    }
-  };
-
   const handleLike = async (postId: number) => {
     if (!user) {
       setShowLoginPrompt(postId);
@@ -227,6 +190,14 @@ export const ForumDiscussions: FC = () => {
     }
 
     try {
+      const response = await fetch(`/api/forum/posts/${postId}/like`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update like status');
+      }
+
       setPosts(prevPosts =>
         prevPosts.map(post =>
           post.id === postId
@@ -248,15 +219,21 @@ export const ForumDiscussions: FC = () => {
     if (!user || !replyContent[postId]?.trim()) return;
 
     try {
-      const newComment = {
-        id: Date.now(),
-        author: {
-          name: user.name,
-          avatar: '/avatars/default.jpg',
+      const response = await fetch(`/api/forum/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        content: replyContent[postId],
-        timestamp: 'Just now',
-      };
+        body: JSON.stringify({
+          content: replyContent[postId],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post reply');
+      }
+
+      const newComment = await response.json();
 
       setPosts(prevPosts =>
         prevPosts.map(post =>
@@ -366,7 +343,7 @@ export const ForumDiscussions: FC = () => {
                           attachments: [
                             ...(comment.attachments || []),
                             {
-                              id: Date.now().toString(),
+                              id: nanoid(),
                               type: 'image',
                               url: mockImageUrl,
                               name: file.name,
@@ -383,7 +360,7 @@ export const ForumDiscussions: FC = () => {
       } else {
         // Adding image to new reply
         const newAttachment = {
-          id: Date.now().toString(),
+          id: nanoid(),
           type: 'image' as const,
           url: mockImageUrl,
           name: file.name,
@@ -391,7 +368,7 @@ export const ForumDiscussions: FC = () => {
         };
         setReplyContent(prev => ({
           ...prev,
-          [postId]: [...(prev[postId] || []), newAttachment],
+          [postId]: (prev[postId] || '') + `![${newAttachment.name}](${newAttachment.url})`,
         }));
       }
       toast.success('Image uploaded successfully');
@@ -866,7 +843,7 @@ export const ForumDiscussions: FC = () => {
                         onChange={(e) => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
                         onClick={() => !user && handleReplyAttempt(post.id)}
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter' && user) {
+                          if (e.key === 'Enter' && user && replyContent[post.id]?.trim()) {
                             handleReplySubmit(post.id);
                           }
                         }}
@@ -877,11 +854,17 @@ export const ForumDiscussions: FC = () => {
                     </div>
                     <button 
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2
-                        ${user 
+                        ${user && replyContent[post.id]?.trim()
                           ? 'bg-blue-500 text-white hover:bg-blue-600' 
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                      onClick={() => user ? handleReplySubmit(post.id) : handleReplyAttempt(post.id)}
-                      disabled={!user}
+                      onClick={() => {
+                        if (user && replyContent[post.id]?.trim()) {
+                          handleReplySubmit(post.id);
+                        } else if (!user) {
+                          handleReplyAttempt(post.id);
+                        }
+                      }}
+                      disabled={!user || !replyContent[post.id]?.trim()}
                     >
                       {user ? (
                         <PaperAirplaneIcon className="w-4 h-4" />
